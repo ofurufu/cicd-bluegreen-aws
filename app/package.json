@@ -1,0 +1,31 @@
+{
+  "name": "cicd-bluegreen-app",
+  "version": "1.0.0",
+  "description": "Demo application for Blue/Green CI/CD on AWS with GitHub Actions",
+  "main": "src/index.js",
+  "scripts": {
+    "start":     "node src/index.js",
+    "test":      "jest --coverage --coverageReporters=text --coverageReporters=lcov",
+    "test:ci":   "jest --coverage --coverageReporters=text --ci --forceExit"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm":  ">=9.0.0"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "jest": "^29.7.0"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testMatch": ["**/tests/**/*.test.js"],
+    "coverageThreshold": {
+      "global": {
+        "lines":      80,
+        "functions":  80,
+        "branches":   70,
+        "statements": 80
+      }
+    }
+  }
+}

@@ -1,0 +1,68 @@
+# pipeline/appspec.yml
+# ─────────────────────────────────────────────────────────────────────────────
+# CodeDeploy Application Specification
+#
+# This file tells CodeDeploy:
+# 1. Which files to copy from the S3 artifact to the EC2 instance
+# 2. What permissions to set on those files
+# 3. Which scripts to run at each lifecycle hook
+# ─────────────────────────────────────────────────────────────────────────────
+
+version: 0.0
+os: linux
+
+# Files section: maps source paths (in S3 artifact) to destination paths (on EC2)
+files:
+  - source: /app       # Everything in the /app directory of the zip
+    destination: /app  # Goes to /app on the EC2 instance
+
+# Permissions section: set ownership and mode on deployed files/directories
+permissions:
+  - object: /app
+    owner: appuser
+    group: appuser
+    type:
+      - directory
+  - object: /app/src
+    owner: appuser
+    group: appuser
+    mode: "644"
+    type:
+      - file
+  - object: /app/scripts
+    owner: root
+    group: root
+    mode: "755"    # Scripts must be executable
+    type:
+      - file
+
+# Hooks section: scripts to run at each deployment lifecycle event
+# Each script must exit 0 for the deployment to continue.
+# Any non-zero exit code causes CodeDeploy to stop and roll back.
+hooks:
+  # Runs before files are copied. Use to stop old app version.
+  BeforeInstall:
+    - location: app/scripts/stop_app.sh
+      timeout: 60     # Seconds before CodeDeploy marks this hook as failed
+      runas: root
+
+  # Runs after files are copied. Use to install deps and configure the app.
+  AfterInstall:
+    - location: app/scripts/install_dependencies.sh
+      timeout: 180
+      runas: root
+    - location: app/scripts/configure_app.sh
+      timeout: 60
+      runas: root
+
+  # Start the application
+  ApplicationStart:
+    - location: app/scripts/start_app.sh
+      timeout: 60
+      runas: root
+
+  # Validate the app is healthy before traffic switches from Blue to Green
+  ValidateService:
+    - location: app/scripts/validate_service.sh
+      timeout: 180    # 12 retries × 10 seconds = up to 120 seconds
+      runas: root
